@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# 运行环境（dev 服务器数据、日志、崩溃报告）
+run/
+logs/
+crash-reports/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Git 历史
+*.class

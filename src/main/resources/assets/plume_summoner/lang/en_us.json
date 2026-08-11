@@ -1,0 +1,15 @@
+{
+  "key.categories.plume_summoner": "Plume Summoner",
+  "key.plume_summoner.open": "Open Summoner Menu",
+  "screen.plume_summoner.title": "Plume Summoner",
+  "screen.plume_summoner.search": "Search mobs...",
+  "screen.plume_summoner.loading": "Loading mobs...",
+  "gui.plume_summoner.close": "Close",
+  "gui.plume_summoner.unlocked": "Unlocked",
+  "gui.plume_summoner.locked": "Locked",
+  "tooltip.plume_summoner.locked": "Kill this mob to unlock its summon.",
+  "message.plume_summoner.summoned": "%s has been summoned!",
+  "message.plume_summoner.unlocked_mob": "Unlocked summon: %s",
+  "message.plume_summoner.limit_reached": "You have too many summons! (max %d)",
+  "message.plume_summoner.not_unlocked": "This mob is not unlocked yet."
+}

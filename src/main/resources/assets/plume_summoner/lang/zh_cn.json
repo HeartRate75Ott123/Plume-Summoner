@@ -1,0 +1,15 @@
+{
+  "key.categories.plume_summoner": "Plume Summoner",
+  "key.plume_summoner.open": "打开召唤菜单",
+  "screen.plume_summoner.title": "Plume Summoner",
+  "screen.plume_summoner.search": "搜索生物...",
+  "screen.plume_summoner.loading": "正在加载生物...",
+  "gui.plume_summoner.close": "关闭",
+  "gui.plume_summoner.unlocked": "已解锁",
+  "gui.plume_summoner.locked": "未解锁",
+  "tooltip.plume_summoner.locked": "击杀该生物以解锁召唤。",
+  "message.plume_summoner.summoned": "%s 已被召唤！",
+  "message.plume_summoner.unlocked_mob": "解锁召唤：%s",
+  "message.plume_summoner.limit_reached": "召唤生物太多！(上限 %d)",
+  "message.plume_summoner.not_unlocked": "该生物尚未解锁。"
+}
