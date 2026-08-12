@@ -10,6 +10,7 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.network.PacketDistributor;
+import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
 import plume.summoner.network.NetworkHandler;
 import plume.summoner.network.UnlockSyncMessage;
@@ -31,6 +32,10 @@ public class LivingDeathHandler {
         }
 
         PlayerSummonDataProvider data = (PlayerSummonDataProvider) player;
+        // 黑名单实体的击杀不计数、不触发解锁提示（菜单中也不显示）
+        if (SummonerConfig.isBlacklisted(mob.getType())) {
+            return;
+        }
         if (data.isSummonUnlocked(mob.getType())) {
             return;
         }

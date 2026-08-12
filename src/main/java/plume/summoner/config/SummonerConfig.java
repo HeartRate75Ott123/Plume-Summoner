@@ -1,5 +1,7 @@
 package plume.summoner.config;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
@@ -36,6 +38,13 @@ public final class SummonerConfig {
      */
     public static boolean isValidEntry(Object o) {
         return o instanceof String s && (s.isEmpty() || s.matches("[a-z0-9_\\-.]+:[a-z0-9_./\\-]+"));
+    }
+
+    /**
+     * 实体是否在黑名单中：黑名单实体的击杀不计入解锁计数，菜单中也不显示。
+     */
+    public static boolean isBlacklisted(EntityType<?> type) {
+        return BLACKLIST.get().contains(BuiltInRegistries.ENTITY_TYPE.getKey(type).toString());
     }
 
     public static void register() {
