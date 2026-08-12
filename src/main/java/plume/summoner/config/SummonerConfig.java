@@ -1,5 +1,7 @@
 package plume.summoner.config;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -34,6 +36,13 @@ public final class SummonerConfig {
         // 若空条目被拒绝，含空条目的列表将无法删除任何条目（死锁）。空条目运行时无副作用。
         // 非空条目仍严格校验 modid:entityid 格式。
         return o instanceof String s && (s.isEmpty() || s.matches("[a-z0-9_\\-.]+:[a-z0-9_./\\-]+"));
+    }
+
+    /**
+     * 实体是否在黑名单中：黑名单实体的击杀不计入解锁计数，菜单中也不显示。
+     */
+    public static boolean isBlacklisted(EntityType<?> type) {
+        return BLACKLIST.get().contains(BuiltInRegistries.ENTITY_TYPE.getKey(type).toString());
     }
 
     public static void register(ModContainer container) {

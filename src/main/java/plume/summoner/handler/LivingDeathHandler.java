@@ -9,6 +9,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
 import plume.summoner.network.UnlockSyncPayload;
 
@@ -29,6 +30,10 @@ public class LivingDeathHandler {
         }
 
         PlayerSummonDataProvider data = (PlayerSummonDataProvider) player;
+        // 黑名单实体的击杀不计数、不触发解锁提示（菜单中也不显示）
+        if (SummonerConfig.isBlacklisted(mob.getType())) {
+            return;
+        }
         if (data.isSummonUnlocked(mob.getType())) {
             return;
         }

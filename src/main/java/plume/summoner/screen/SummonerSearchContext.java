@@ -123,10 +123,13 @@ public final class SummonerSearchContext {
     // 3. 翻译键未配置（翻译结果仍是 entity.x.x 原始样式）的丢到最后
 
     private static int tier(EntityType<?> type) {
+        if (!hasTranslation(type)) {
+            return 2;
+        }
         if (PlumeSummonerClient.UNLOCKED_TYPES.contains(type)) {
             return 0;
         }
-        return hasTranslation(type) ? 1 : 2;
+        return 1;
     }
 
     private static boolean hasTranslation(EntityType<?> type) {
