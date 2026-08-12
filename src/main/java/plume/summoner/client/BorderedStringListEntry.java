@@ -22,7 +22,10 @@ public class BorderedStringListEntry
                                    Supplier<List<String>> defaultValue,
                                    Component resetButtonKey) {
         super(fieldName, list, requiresRestart, tooltipSupplier, saveConsumer, defaultValue,
-                resetButtonKey, true, false, true, BorderedCell::new);
+                resetButtonKey, true, true, true, BorderedCell::new);
+        // Cloth 用 requiresRestart 控制初始折叠：false 时列表折叠只显示标题行，
+        // 条目不可见易被误认为"丢失"，这里强制默认展开
+        this.setExpanded(true);
     }
 
     @Override
@@ -53,7 +56,7 @@ public class BorderedStringListEntry
 
         @Override
         protected String substituteDefault(String value) {
-            return "";
+            return value;
         }
 
         @Override

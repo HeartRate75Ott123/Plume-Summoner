@@ -33,7 +33,11 @@ public final class SummonerConfigScreenFactory {
                 .setTitle(TITLE)
                 .setSavingRunnable(() -> {
                     SummonerConfig.KILLS_TO_UNLOCK.set(kills[0]);
-                    SummonerConfig.BLACKLIST.set(List.copyOf(blacklist));
+                    // set() 会用 isValidEntry 校验每个条目，格式非法的条目（如无冒号）会抛异常
+                    // 导致整份配置写不进去，这里先按加载时的规则过滤掉（与"无效条目被忽略"语义一致）
+                    SummonerConfig.BLACKLIST.set(blacklist.stream()
+                            .filter(SummonerConfig::isValidEntry)
+                            .toList());
                     SummonerConfig.SPEC.save();
                 });
 
