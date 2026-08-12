@@ -29,7 +29,10 @@ public class SummonMenuScreen extends Screen {
     private final SearchWidget searchBar = createSearchBar();
     private final Button closeButton = createCloseButton();
     private final List<SummonEntityWidget> widgets = new ArrayList<>();
-    private String lastSearch = "";
+    // 关闭 GUI 时保存上次搜索内容，下次打开时恢复（静态字段跨 Screen 实例存活）
+    private static String lastSearch = "";
+    // 每次打开 GUI 后第一次点击搜索框自动清空，后续点击不清空
+    private boolean firstClickOnSearch = true;
     private boolean loaded;
 
     private float scrollOffset;
@@ -47,7 +50,7 @@ public class SummonMenuScreen extends Screen {
         this.scrollOffset = 0;
         this.addRenderableWidget(this.searchBar);
         this.addRenderableWidget(this.closeButton);
-        this.searchBar.setResponder(text -> {
+        this.searchBar.addResponder(text -> {
             this.lastSearch = text;
             if (this.loaded) {
                 this.repopulate();
@@ -62,6 +65,13 @@ public class SummonMenuScreen extends Screen {
                 minecraft.execute(this::onEntitiesLoaded);
             }
         });
+    }
+
+    @Override
+    public void onClose() {
+        // 关闭 GUI 时保存上次搜索框里的内容（供下次打开恢复）
+        lastSearch = this.searchBar.getValue();
+        super.onClose();
     }
 
     private void onEntitiesLoaded() {
@@ -196,6 +206,9 @@ public class SummonMenuScreen extends Screen {
                 break;
             }
         }
+
+        // 补全弹窗不是 addRenderableWidget 注册的，需手动渲染（Controlling 同款做法）
+        this.searchBar.autoComplete().render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics) {
@@ -212,6 +225,10 @@ public class SummonMenuScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        // 补全弹窗优先处理滚轮（弹窗仅在聚焦时可见，避免未聚焦时吞掉网格滚轮）
+        if (this.searchBar.isFocused() && this.searchBar.autoComplete().mouseScrolled(mouseX, mouseY, delta)) {
+            return true;
+        }
         if (!this.widgets.isEmpty() && maxScroll() > 0) {
             this.scrollOffset = Math.max(0, Math.min(maxScroll(), this.scrollOffset - (float) delta * SCROLL_SPEED));
             applyScroll();
@@ -222,9 +239,29 @@ public class SummonMenuScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (mouseY < TOP) {
-            return this.searchBar.mouseClicked(mouseX, mouseY, button)
-                    || this.closeButton.mouseClicked(mouseX, mouseY, button);
+        // 搜索框 + 其补全弹窗（弹窗仅在搜索框聚焦时渲染/可交互）都转发给搜索框。
+        // 注意：autoComplete().isMouseOver 不看聚焦状态，必须叠加 isFocused 判断，
+        // 否则未聚焦时弹窗区域（与网格第一行重叠）会吞掉实体格子的点击。
+        boolean onSearchUi = mouseY < TOP
+                || (this.searchBar.isFocused() && this.searchBar.autoComplete().isMouseOver(mouseX, mouseY));
+        if (onSearchUi) {
+            // 每次打开 GUI 后首次点击搜索框自动清空内容，后续点击不清空
+            if (this.firstClickOnSearch && !this.searchBar.isFocused()
+                    && this.searchBar.isMouseOver(mouseX, mouseY)) {
+                this.firstClickOnSearch = false;
+                this.searchBar.setValue("");
+            }
+            if (this.searchBar.mouseClicked(mouseX, mouseY, button)) {
+                // 手动实现 Screen 默认的聚焦分发（点击才聚焦，补全弹窗与光标才显示）
+                this.setFocused(this.searchBar);
+                return true;
+            }
+            return mouseY < TOP && this.closeButton.mouseClicked(mouseX, mouseY, button);
+        }
+
+        // 点击网格区域时让搜索框失焦，收起补全弹窗
+        if (this.searchBar.isFocused()) {
+            this.searchBar.setFocused(false);
         }
 
         if (mouseX >= scrollbarX() && mouseX < scrollbarX() + SCROLLBAR_WIDTH) {

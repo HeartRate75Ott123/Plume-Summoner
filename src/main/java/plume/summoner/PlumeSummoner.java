@@ -1,12 +1,16 @@
 package plume.summoner;
 
 import com.mojang.logging.LogUtils;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import plume.summoner.client.SummonerConfigScreenFactory;
 import plume.summoner.config.SummonerConfig;
 import plume.summoner.handler.LivingDeathHandler;
 import plume.summoner.network.NetworkHandler;
@@ -21,5 +25,13 @@ public class PlumeSummoner {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         NetworkHandler.register(modEventBus);
         MinecraftForge.EVENT_BUS.register(new LivingDeathHandler());
+
+        // 游戏内配置界面入口（Mod List → Config）：Cloth Config 自动生成。
+        // ConfigScreenHandler 是客户端类，用 unsafeRunWhenOn 保证服务端不加载它。
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                ModLoadingContext.get().registerExtensionPoint(
+                        ConfigScreenHandler.ConfigScreenFactory.class,
+                        () -> new ConfigScreenHandler.ConfigScreenFactory(
+                                (modContainer, parent) -> SummonerConfigScreenFactory.create(parent))));
     }
 }

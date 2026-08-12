@@ -6,6 +6,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import plume.summoner.PlumeSummoner;
+import plume.summoner.config.SummonerConfig;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -59,13 +60,26 @@ public final class SummonEntitiesData {
         return LOADING.get();
     }
 
+    /**
+     * 重新加载实体列表（如黑名单配置变更后），幂等。
+     */
+    public static void reloadAsync() {
+        LOADED.set(false);
+        LOADING.set(null);
+        loadAsync();
+    }
+
     private static void loadAll() {
         TYPES.clear();
         RENDER_ENTITIES.clear();
+        java.util.Set<String> blacklist = new java.util.HashSet<>(SummonerConfig.BLACKLIST.get());
         Minecraft minecraft = Minecraft.getInstance();
         int created = 0;
         for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
             if (type == EntityType.PLAYER) {
+                continue;
+            }
+            if (blacklist.contains(BuiltInRegistries.ENTITY_TYPE.getKey(type).toString())) {
                 continue;
             }
             try {

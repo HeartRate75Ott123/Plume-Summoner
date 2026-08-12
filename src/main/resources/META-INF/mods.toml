@@ -19,6 +19,8 @@ license="${mod_license}"
 [[mods]] #mandatory
 # The modid of the mod
 modId="${mod_id}" #mandatory
+# The class annotated with @Mod, FML instantiates it by reflection
+className="plume.summoner.PlumeSummoner" #mandatory
 # The version number of the mod
 version="${mod_version}" #mandatory
 # A display name for the mod

@@ -15,9 +15,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 import plume.summoner.PlumeSummoner;
+import plume.summoner.client.favorites.SummonerFavorites;
 import plume.summoner.screen.SummonMenuScreen;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,7 +31,8 @@ public final class PlumeSummonerClient {
             GLFW.GLFW_KEY_G,
             KEY_CATEGORY);
 
-    public static final Set<EntityType<?>> UNLOCKED_TYPES = new HashSet<>();
+    // LinkedHashSet 保持同步顺序（= 解锁先后），客户端"新解锁排最前"排序依赖此顺序。
+    public static final Set<EntityType<?>> UNLOCKED_TYPES = new LinkedHashSet<>();
 
     private PlumeSummonerClient() {
     }
@@ -71,6 +73,12 @@ public final class PlumeSummonerClient {
                     minecraft.setScreen(new SummonMenuScreen());
                 }
             }
+        }
+
+        @SubscribeEvent
+        public static void onJoinWorld(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingIn event) {
+            // 进入世界（单机/联机）时按当前存档加载收藏
+            SummonerFavorites.loadForCurrentWorld();
         }
     }
 }

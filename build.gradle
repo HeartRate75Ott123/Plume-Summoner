@@ -28,7 +28,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcMappings/output.srg"
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
                 "${mod_id}" {
@@ -66,6 +66,10 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven { url = 'https://jitpack.io' }
+    // Searchables（Controlling 的前置搜索/补全引擎），maven.blamejared.com 由 BlameJared 维护
+    maven { url = 'https://maven.blamejared.com' }
+    // Cloth Config API（游戏内配置界面自动生成）
+    maven { url = 'https://maven.shedaniel.me/' }
 }
 
 dependencies {
@@ -80,6 +84,20 @@ dependencies {
     jarJar("com.github.towdium:PinIn:1.6.0") {
         transitive = false
         jarJar.ranged(it, "[1.6.0,)")
+    }
+
+    // Searchables：组件语法（name:/categories:/favorites:）与自动补全弹窗引擎
+    // fg.deobf 供开发环境编译/运行（minecraftLibrary 不会做 deobf 转换，不可用它带 Searchables）；
+    // jarJar 打进发布 jar，玩家无需单独安装（若玩家装了 Controlling 会去重，Forge 选择最高版本）
+    implementation fg.deobf("com.blamejared.searchables:Searchables-forge-1.20.1:1.0.3")
+    jarJar("com.blamejared.searchables:Searchables-forge-1.20.1:1.0.3") {
+        jarJar.ranged(it, "[1.0,)")
+    }
+
+    // Cloth Config API：自动生成游戏内配置界面（Mod List → Config），无需手搓 UI
+    implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:11.1.118")
+    jarJar("me.shedaniel.cloth:cloth-config-forge:11.1.118") {
+        jarJar.ranged(it, "[11,)")
     }
 }
 
