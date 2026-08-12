@@ -32,8 +32,6 @@ public class SummonMenuScreen extends Screen {
     private final List<SummonEntityWidget> widgets = new ArrayList<>();
     // 关闭 GUI 时保存上次搜索内容，下次打开时恢复（静态字段跨 Screen 实例存活）
     private static String lastSearch = "";
-    // 每次打开 GUI 后第一次点击搜索框自动清空，后续点击不清空
-    private boolean firstClickOnSearch = true;
     private boolean loaded;
 
     private float scrollOffset;
@@ -58,6 +56,7 @@ public class SummonMenuScreen extends Screen {
             }
         });
         this.searchBar.setValue(this.lastSearch);
+        this.setInitialFocus(this.searchBar);
 
         SummonEntitiesData.loadAsync().thenRun(() -> {
             Minecraft minecraft = Minecraft.getInstance();
@@ -72,6 +71,13 @@ public class SummonMenuScreen extends Screen {
         // 关闭 GUI 时保存上次搜索框里的内容（供下次打开恢复）
         lastSearch = this.searchBar.getValue();
         super.onClose();
+    }
+
+    /**
+     * 进入新存档时清空上次搜索内容（同一存档内关闭再打开会保留）。
+     */
+    public static void resetLastSearch() {
+        lastSearch = "";
     }
 
     private void onEntitiesLoaded() {
@@ -254,12 +260,6 @@ public class SummonMenuScreen extends Screen {
         boolean onSearchUi = mouseY < TOP
                 || (this.searchBar.isFocused() && this.searchBar.autoComplete().isMouseOver(mouseX, mouseY));
         if (onSearchUi) {
-            // 每次打开 GUI 后首次点击搜索框自动清空内容，后续点击不清空
-            if (this.firstClickOnSearch && !this.searchBar.isFocused()
-                    && this.searchBar.isMouseOver(mouseX, mouseY)) {
-                this.firstClickOnSearch = false;
-                this.searchBar.setValue("");
-            }
             if (this.searchBar.mouseClicked(mouseX, mouseY, button)) {
                 // 手动实现 Screen 默认的聚焦分发（点击才聚焦，补全弹窗与光标才显示）
                 this.setFocused(this.searchBar);

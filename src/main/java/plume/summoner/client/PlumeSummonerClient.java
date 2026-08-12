@@ -11,6 +11,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.lwjgl.glfw.GLFW;
 import plume.summoner.PlumeSummoner;
+import plume.summoner.client.favorites.SummonerFavorites;
 import plume.summoner.screen.SummonEntitiesData;
 import plume.summoner.screen.SummonMenuScreen;
 
@@ -63,6 +64,13 @@ public final class PlumeSummonerClient {
                     minecraft.setScreen(new SummonMenuScreen());
                 }
             }
+        }
+
+        @SubscribeEvent
+        public static void onJoinWorld(net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingIn event) {
+            // 进入世界（单机/联机）时按当前存档加载收藏、清空上次搜索内容
+            SummonerFavorites.loadForCurrentWorld();
+            SummonMenuScreen.resetLastSearch();
         }
     }
 }
