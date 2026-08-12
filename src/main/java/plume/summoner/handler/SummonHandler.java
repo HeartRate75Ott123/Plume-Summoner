@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -50,6 +51,14 @@ public final class SummonHandler {
         // 正确面向玩家：实体朝向 = 从实体位置指向玩家的方位角（MC yaw：0 朝南、90 朝西）
         float yaw = (float) Math.toDegrees(Math.atan2(-(player.getX() - pos.x), player.getZ() - pos.z));
         entity.moveTo(pos.x, pos.y, pos.z, yaw, 0.0F);
+        // LivingEntity 渲染旋转用的是 yBodyRot/yHeadRot（moveTo 只设置 getYRot），
+        // 不同步会导致实体固定朝向（默认朝南），需手动对齐三处朝向
+        if (entity instanceof LivingEntity living) {
+            living.yBodyRot = yaw;
+            living.yBodyRotO = yaw;
+            living.setYHeadRot(yaw);
+            living.yHeadRotO = yaw;
+        }
 
         if (entity instanceof Mob mob) {
             mob.getPersistentData().putUUID(OWNER_TAG, player.getUUID());

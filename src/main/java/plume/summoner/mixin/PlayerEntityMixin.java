@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +29,9 @@ public abstract class PlayerEntityMixin implements PlayerSummonDataProvider {
     private static final String NBT_KEY = "plume_summoner_kill_counts";
 
     @Unique
-    private final Map<String, Integer> plumeSummoner$killCounts = new HashMap<>();
+    // LinkedHashMap 保持插入顺序（= 首次击杀该生物的顺序），
+    // 保证 getSummonUnlockedTypes() 按解锁先后输出，客户端"新解锁排最前"排序依赖此顺序。
+    private final Map<String, Integer> plumeSummoner$killCounts = new LinkedHashMap<>();
 
     @Override
     public Set<EntityType<?>> getSummonUnlockedTypes() {
