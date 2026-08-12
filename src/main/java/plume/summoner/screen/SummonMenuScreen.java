@@ -8,6 +8,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
+import org.lwjgl.opengl.GL11;
 import plume.summoner.screen.widget.SearchWidget;
 import plume.summoner.screen.widget.SummonEntityWidget;
 
@@ -194,6 +195,14 @@ public class SummonMenuScreen extends Screen {
         RenderSystem.disableScissor();
         guiGraphics.pose().popPose();
 
+        // 实体模型渲染（InventoryScreen.renderEntityInInventory 内部平移到 z=50 并写入深度缓冲）
+        // 会让后续 GUI 文字（默认 z=0，深度更远）在 LEQUAL 深度测试下被实体深度遮挡而消失，
+        // 补全弹窗/滚动条等均受影响。这里清空深度缓冲并关闭深度测试，彻底消除实体渲染的残留影响。
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, false);
+        RenderSystem.disableDepthTest();
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+
         renderScrollbar(guiGraphics);
 
         for (SummonEntityWidget widget : this.widgets) {
@@ -207,6 +216,8 @@ public class SummonMenuScreen extends Screen {
 
         // 补全弹窗不是 addRenderableWidget 注册的，需手动渲染（Controlling 同款做法）
         this.searchBar.autoComplete().render(guiGraphics, mouseX, mouseY, partialTick);
+
+        RenderSystem.enableDepthTest();
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics) {
