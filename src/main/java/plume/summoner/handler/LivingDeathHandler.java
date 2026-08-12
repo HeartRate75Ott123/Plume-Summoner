@@ -32,11 +32,13 @@ public class LivingDeathHandler {
         if (data.isSummonUnlocked(mob.getType())) {
             return;
         }
-        data.addSummonUnlock(mob.getType());
-        player.displayClientMessage(
-                Component.translatable("message.plume_summoner.unlocked_mob", mob.getType().getDescription()),
-                true);
-        sendUnlockSync(player);
+        // 达到配置的击杀次数才解锁（默认 1）
+        if (data.onMobKilled(mob.getType())) {
+            player.displayClientMessage(
+                    Component.translatable("message.plume_summoner.unlocked_mob", mob.getType().getDescription()),
+                    true);
+            sendUnlockSync(player);
+        }
     }
 
     @SubscribeEvent

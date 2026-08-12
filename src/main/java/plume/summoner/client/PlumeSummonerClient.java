@@ -11,9 +11,10 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.lwjgl.glfw.GLFW;
 import plume.summoner.PlumeSummoner;
+import plume.summoner.screen.SummonEntitiesData;
 import plume.summoner.screen.SummonMenuScreen;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public final class PlumeSummonerClient {
@@ -25,7 +26,8 @@ public final class PlumeSummonerClient {
             GLFW.GLFW_KEY_G,
             KEY_CATEGORY);
 
-    public static final Set<EntityType<?>> UNLOCKED_TYPES = new HashSet<>();
+    // LinkedHashSet 保持解锁顺序（旧→新），供菜单"新解锁的排最前"排序使用
+    public static final Set<EntityType<?>> UNLOCKED_TYPES = new LinkedHashSet<>();
 
     private PlumeSummonerClient() {
     }
@@ -35,6 +37,14 @@ public final class PlumeSummonerClient {
         @SubscribeEvent
         public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
             event.register(OPEN_SUMMON_MENU);
+        }
+
+        @SubscribeEvent
+        public static void onConfigReload(net.neoforged.fml.event.config.ModConfigEvent.Reloading event) {
+            // 配置文件被修改（含外部编辑）后重载实体列表，黑名单立即生效
+            if (event.getConfig().getModId().equals(PlumeSummoner.MOD_ID)) {
+                SummonEntitiesData.reloadAsync();
+            }
         }
     }
 

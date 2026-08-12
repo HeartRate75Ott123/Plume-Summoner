@@ -4,14 +4,17 @@ import me.towdium.pinin.DictLoader;
 import me.towdium.pinin.PinIn;
 import me.towdium.pinin.searchers.Searcher;
 import me.towdium.pinin.searchers.TreeSearcher;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import plume.summoner.PlumeSummoner;
+import plume.summoner.client.PlumeSummonerClient;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -79,39 +82,106 @@ public final class SummonerSearchContext {
     }
 
     /**
-     * 搜索：优先拼音/索引匹配，兜底做一次忽略大小写的子串匹配。
+     * 搜索：交给 searchables 解析（支持 "name:" 默认组件 / "categories:" 模组 / "favorites:" 收藏
+     * 等组件谓词，name 组件内部走 PinIn 拼音/中文/英文匹配），结果再按
+     * "新解锁的 → 原版/模组 → 翻译缺失的"三层排序。
      */
     public static List<EntityType<?>> search(String query) {
-        String text = query == null ? "" : query.trim();
-        List<EntityType<?>> matches = new ArrayList<>();
-
-        if (!text.isEmpty()) {
-            TreeSearcher<EntityType<?>> current = tree;
-            int version = SummonEntitiesData.version();
-            if (current == null || indexedVersion != version) {
-                rebuild(version);
-                current = tree;
-            }
-            Set<EntityType<?>> seen = new HashSet<>();
-            for (EntityType<?> type : current.search(text)) {
-                if (seen.add(type)) {
-                    matches.add(type);
-                }
-            }
-            if (matches.isEmpty()) {
-                String lower = text.toLowerCase(java.util.Locale.ROOT);
-                for (EntityType<?> type : SummonEntitiesData.types()) {
-                    if (type.getDescription().getString().toLowerCase(java.util.Locale.ROOT).contains(lower)
-                            || BuiltInRegistries.ENTITY_TYPE.getKey(type).toString().contains(lower)) {
-                        matches.add(type);
-                    }
-                }
-            }
-        } else {
-            matches.addAll(SummonEntitiesData.types());
-        }
-
-        matches.sort(Comparator.comparing(type -> type.getDescription().getString()));
+        List<EntityType<?>> matches = new ArrayList<>(
+                SummonerSearchType.TYPE.filterEntries(SummonEntitiesData.types(), query == null ? "" : query));
+        matches.sort(SORTER);
         return matches;
     }
+
+    /**
+     * 单个生物是否匹配查询（供 searchables 的 defaultComponent 过滤使用）。
+     * 与 search() 同一套匹配规则：PinIn 拼音/索引 + 忽略大小写子串兜底。
+     */
+    public static boolean matches(EntityType<?> type, String query) {
+        String text = query == null ? "" : query.trim();
+        if (text.isEmpty()) {
+            return true;
+        }
+        TreeSearcher<EntityType<?>> current = tree;
+        int version = SummonEntitiesData.version();
+        if (current == null || indexedVersion != version) {
+            rebuild(version);
+            current = tree;
+        }
+        if (current.search(text).contains(type)) {
+            return true;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        return type.getDescription().getString().toLowerCase(Locale.ROOT).contains(lower)
+                || BuiltInRegistries.ENTITY_TYPE.getKey(type).toString().toLowerCase(Locale.ROOT).contains(lower);
+    }
+
+    // ---------- 排序 ----------
+    // 排序规则（用户需求）：
+    // 1. 已解锁的排最前，内部按解锁时间倒序（新解锁的在最前）
+    // 2. 其余按 原版(minecraft) → 其他模组 顺序
+    // 3. 翻译键未配置（翻译结果仍是 entity.x.x 原始样式）的丢到最后
+
+    private static int tier(EntityType<?> type) {
+        if (PlumeSummonerClient.UNLOCKED_TYPES.contains(type)) {
+            return 0;
+        }
+        return hasTranslation(type) ? 1 : 2;
+    }
+
+    private static boolean hasTranslation(EntityType<?> type) {
+        try {
+            return net.minecraft.locale.Language.getInstance()
+                    .has(type.getDescriptionId());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static int unlockIndex(EntityType<?> type) {
+        int i = 0;
+        for (EntityType<?> t : PlumeSummonerClient.UNLOCKED_TYPES) {
+            if (t == type) {
+                return i;
+            }
+            i++;
+        }
+        return Integer.MAX_VALUE;
+    }
+
+    private static String namespace(EntityType<?> type) {
+        return BuiltInRegistries.ENTITY_TYPE.getKey(type).getNamespace();
+    }
+
+    private static int compareByNamespace(EntityType<?> a, EntityType<?> b) {
+        String na = namespace(a);
+        String nb = namespace(b);
+        boolean vanillaA = na.equals("minecraft");
+        boolean vanillaB = nb.equals("minecraft");
+        if (vanillaA != vanillaB) {
+            return vanillaA ? -1 : 1;
+        }
+        if (!na.equals(nb)) {
+            // 不同模组：按模组显示名排序（中文语言下显示中文名，无翻译回退 modid）
+            int c = SummonerSearchType.modDisplayName(a).compareTo(SummonerSearchType.modDisplayName(b));
+            if (c != 0) {
+                return c;
+            }
+        }
+        // 模组内部按显示名排序（中文语言下按中文名，英文按英文名）
+        return a.getDescription().getString().compareTo(b.getDescription().getString());
+    }
+
+    private static final Comparator<EntityType<?>> SORTER = (a, b) -> {
+        int ta = tier(a);
+        int tb = tier(b);
+        if (ta != tb) {
+            return Integer.compare(ta, tb);
+        }
+        if (ta == 0) {
+            // 已解锁：解锁索引大的（新解锁）在前
+            return Integer.compare(unlockIndex(b), unlockIndex(a));
+        }
+        return compareByNamespace(a, b);
+    };
 }

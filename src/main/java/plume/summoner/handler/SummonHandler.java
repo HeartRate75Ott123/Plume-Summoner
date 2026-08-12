@@ -10,11 +10,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plume.summoner.PlumeSummoner;
-import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
 import plume.summoner.network.SummonRequestPayload;
 
@@ -40,19 +38,6 @@ public final class SummonHandler {
     public static void summon(ServerPlayer player, EntityType<?> type) {
         ServerLevel level = player.serverLevel();
 
-        long count = level.getEntitiesOfClass(Mob.class,
-                        AABB.ofSize(player.position(), 256.0D, 256.0D, 256.0D),
-                        mob -> mob.getPersistentData().hasUUID(OWNER_TAG)
-                                && player.getUUID().equals(mob.getPersistentData().getUUID(OWNER_TAG)))
-                .size();
-        if (count >= SummonerConfig.MAX_SUMMONS_PER_PLAYER.get()) {
-            player.displayClientMessage(
-                    Component.translatable("message.plume_summoner.limit_reached",
-                            SummonerConfig.MAX_SUMMONS_PER_PLAYER.get()),
-                    true);
-            return;
-        }
-
         Entity entity = type.create(level);
         if (entity == null) {
             PlumeSummoner.LOGGER.warn("Failed to create entity of type {}", type);
@@ -62,7 +47,9 @@ public final class SummonHandler {
         BlockPos blockPos = BlockPos.containing(player.getEyePosition().add(player.getLookAngle().scale(3.0D)));
         blockPos = blockPos.atY(level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockPos.getX(), blockPos.getZ()));
         Vec3 pos = Vec3.atBottomCenterOf(blockPos);
-        entity.moveTo(pos.x, pos.y, pos.z, player.getYRot() + 180.0F, 0.0F);
+        // 正确面向玩家：实体朝向 = 从实体位置指向玩家的方位角（MC yaw：0 朝南、90 朝西）
+        float yaw = (float) Math.toDegrees(Math.atan2(-(player.getX() - pos.x), player.getZ() - pos.z));
+        entity.moveTo(pos.x, pos.y, pos.z, yaw, 0.0F);
 
         if (entity instanceof Mob mob) {
             mob.getPersistentData().putUUID(OWNER_TAG, player.getUUID());

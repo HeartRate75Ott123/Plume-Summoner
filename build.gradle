@@ -29,6 +29,8 @@ sourceSets.main.resources {
 repositories {
     // JustEnoughCharacters 使用的 PinIn 拼音库（拼音搜索）
     maven { url = 'https://jitpack.io' }
+    // Controlling 的前置库 Searchables（搜索/补全引擎），maven.blamejared.com 由 BlameJared 维护
+    maven { url = 'https://maven.blamejared.com' }
 }
 
 base {
@@ -125,6 +127,11 @@ dependencies {
     jarJar "com.github.towdium:PinIn:1.6.0"
     // 与 JEC 相同：开发运行时也显式带上 PinIn（双保险）
     clientAdditionalRuntimeClasspath "com.github.towdium:PinIn:1.6.0"
+
+    // Searchables: Controlling 的前置搜索/补全引擎（支持 "组件:值" 语法与自动补全弹窗）
+    // jarJar 内置，玩家无需单独安装（若玩家装了 Controlling 会去重，NeoForge 选择最高版本）
+    implementation "com.blamejared.searchables:Searchables-neoforge-1.21.1:1.0.1"
+    jarJar "com.blamejared.searchables:Searchables-neoforge-1.21.1:1.0.1"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

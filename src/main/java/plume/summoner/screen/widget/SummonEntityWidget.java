@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -19,20 +20,29 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import plume.summoner.PlumeSummoner;
 import plume.summoner.client.PlumeSummonerClient;
+import plume.summoner.client.favorites.SummonerFavorites;
 import plume.summoner.network.SummonRequestPayload;
 
 /**
  * 召唤菜单网格格子（参照 Remorphed 4.2 的 ShapeWidget/EntityWidget）。
  * 渲染实体模型时用 try/catch 兜底（部分实体在 GUI 渲染会崩），
  * 崩溃后不再渲染该格，避免拖垮整个游戏。
+ * 右上角星标：点击切换收藏（纹理素材来自 Cherished Worlds，staricon/emptystaricon）。
  */
 public class SummonEntityWidget extends AbstractButton {
+    private static final ResourceLocation STAR_ICON = ResourceLocation.fromNamespaceAndPath(
+            PlumeSummoner.MOD_ID, "textures/gui/staricon.png");
+    private static final ResourceLocation EMPTY_STAR_ICON = ResourceLocation.fromNamespaceAndPath(
+            PlumeSummoner.MOD_ID, "textures/gui/emptystaricon.png");
+    private static final int STAR_SIZE = 9;
+
     private final Screen parent;
     private final EntityType<?> type;
     private final Mob entity;
     private final int size;
     private final int baseY;
     private boolean crashed;
+    private boolean hoveringStar;
 
     public SummonEntityWidget(int x, int y, int width, int height, EntityType<?> type, Mob entity, Screen parent) {
         super(x, y, width, height, Component.empty());
@@ -44,12 +54,37 @@ public class SummonEntityWidget extends AbstractButton {
     }
 
     /**
-     * hover 时显示的提示：已解锁显示名称，未解锁显示解锁提示。
+     * hover 时显示的提示：星标上显示收藏切换提示，否则已解锁显示名称、未解锁显示解锁提示。
      */
     public Component tooltipText() {
+        if (this.hoveringStar) {
+            return Component.translatable(isFavorite()
+                    ? "gui.plume_summoner.unfavorite"
+                    : "gui.plume_summoner.favorite");
+        }
         return unlocked()
                 ? type.getDescription()
                 : Component.translatable("tooltip.plume_summoner.locked");
+    }
+
+    private boolean isFavorite() {
+        return SummonerFavorites.isFavorite(this.type);
+    }
+
+    private int starX() {
+        return getX() + getWidth() - STAR_SIZE - 2;
+    }
+
+    private int starY() {
+        return getY() + 2;
+    }
+
+    /**
+     * 星标命中区放大到格子右上角约 20x20 区域，避免 9x9 星形太小点偏导致无法切换。
+     */
+    private boolean isOverStar(double mouseX, double mouseY) {
+        return mouseX >= starX() - 4 && mouseX < starX() + STAR_SIZE + 11
+                && mouseY >= starY() - 4 && mouseY < starY() + STAR_SIZE + 11;
     }
 
     /**
@@ -83,6 +118,17 @@ public class SummonEntityWidget extends AbstractButton {
                     Component.translatable("gui.plume_summoner.locked"),
                     getX() + getWidth() / 2, getY() + 8, 0xFFFFFF);
         }
+
+        renderFavoriteStar(guiGraphics, mouseX, mouseY);
+    }
+
+    /**
+     * 右上角星标：收藏显示实心星，未收藏显示空心星（无 hover 高亮，避免色块问题）。
+     */
+    private void renderFavoriteStar(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        this.hoveringStar = isOverStar(mouseX, mouseY);
+        ResourceLocation icon = isFavorite() ? STAR_ICON : EMPTY_STAR_ICON;
+        guiGraphics.blit(icon, starX(), starY(), 0, 0, STAR_SIZE, STAR_SIZE, STAR_SIZE, STAR_SIZE);
     }
 
     /**
@@ -114,11 +160,18 @@ public class SummonEntityWidget extends AbstractButton {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean inside = mouseX >= getX() && mouseX < getX() + getWidth()
                 && mouseY >= getY() && mouseY < getY() + getHeight();
-        if (inside && button == 0 && unlocked()) {
-            PacketDistributor.sendToServer(
-                    new SummonRequestPayload(BuiltInRegistries.ENTITY_TYPE.getKey(type)));
-            parent.onClose();
-            return true;
+        if (inside && button == 0) {
+            // 点击星标切换收藏（不触发召唤，也不改变默认排序位置）
+            if (isOverStar(mouseX, mouseY)) {
+                SummonerFavorites.toggle(type);
+                return true;
+            }
+            if (unlocked()) {
+                PacketDistributor.sendToServer(
+                        new SummonRequestPayload(BuiltInRegistries.ENTITY_TYPE.getKey(type)));
+                parent.onClose();
+                return true;
+            }
         }
         return inside;
     }
