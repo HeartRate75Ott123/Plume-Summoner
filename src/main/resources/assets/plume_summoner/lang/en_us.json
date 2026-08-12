@@ -1,4 +1,4 @@
-{
+﻿{
   "key.categories.plume_summoner": "Plume Summoner",
   "key.plume_summoner.open": "Open Summoner Menu",
   "screen.plume_summoner.title": "Plume Summoner",
@@ -12,7 +12,6 @@
   "tooltip.plume_summoner.locked": "Kill this mob to unlock its summon.",
   "message.plume_summoner.summoned": "%s has been summoned!",
   "message.plume_summoner.unlocked_mob": "Unlocked summon: %s",
-  "message.plume_summoner.limit_reached": "You have too many summons! (max %d)",
   "message.plume_summoner.not_unlocked": "This mob is not unlocked yet.",
   "plume_summoner.configuration.killsToUnlock": "Kills required to unlock",
   "plume_summoner.configuration.killsToUnlock.tooltip": "How many kills are required to unlock a mob for summoning.",
@@ -20,7 +19,6 @@
   "plume_summoner.configuration.blacklist.tooltip": "Entities hidden from the summon menu, one per entry, format: modid:entityid (e.g. minecraft:zombie). Invalid entries are ignored.",
   "gui.plume_summoner.config.title": "Plume Summoner Config",
   "gui.plume_summoner.config.category.general": "General",
-  "gui.plume_summoner.config.maxSummons": "Max summons per player",
   "gui.plume_summoner.config.killsToUnlock": "Kills required to unlock",
   "gui.plume_summoner.config.blacklist": "Blacklist (modid:entityid)",
   "gui.plume_summoner.config.add": "Add",

@@ -18,7 +18,6 @@ import java.util.Optional;
 public final class SummonerConfigScreenFactory {
     private static final Component TITLE = Component.translatable("gui.plume_summoner.config.title");
     private static final Component GENERAL = Component.translatable("gui.plume_summoner.config.category.general");
-    private static final Component MAX_SUMMONS = Component.translatable("gui.plume_summoner.config.maxSummons");
     private static final Component KILLS_TO_UNLOCK = Component.translatable("plume_summoner.configuration.killsToUnlock");
     private static final Component BLACKLIST = Component.translatable("plume_summoner.configuration.blacklist");
 
@@ -26,7 +25,6 @@ public final class SummonerConfigScreenFactory {
     }
 
     public static Screen create(Screen parent) {
-        int[] maxSummons = {SummonerConfig.MAX_SUMMONS_PER_PLAYER.get()};
         int[] kills = {SummonerConfig.KILLS_TO_UNLOCK.get()};
         List<String> blacklist = new ArrayList<>(SummonerConfig.BLACKLIST.get());
 
@@ -34,7 +32,6 @@ public final class SummonerConfigScreenFactory {
                 .setParentScreen(parent)
                 .setTitle(TITLE)
                 .setSavingRunnable(() -> {
-                    SummonerConfig.MAX_SUMMONS_PER_PLAYER.set(maxSummons[0]);
                     SummonerConfig.KILLS_TO_UNLOCK.set(kills[0]);
                     SummonerConfig.BLACKLIST.set(List.copyOf(blacklist));
                     SummonerConfig.SPEC.save();
@@ -42,13 +39,6 @@ public final class SummonerConfigScreenFactory {
 
         ConfigEntryBuilder entry = builder.entryBuilder();
         ConfigCategory general = builder.getOrCreateCategory(GENERAL);
-
-        general.addEntry(entry.startIntField(MAX_SUMMONS, SummonerConfig.MAX_SUMMONS_PER_PLAYER.get())
-                .setDefaultValue(10)
-                .setMin(1)
-                .setMax(50)
-                .setSaveConsumer(value -> maxSummons[0] = value)
-                .build());
 
         general.addEntry(entry.startIntField(KILLS_TO_UNLOCK, SummonerConfig.KILLS_TO_UNLOCK.get())
                 .setDefaultValue(1)

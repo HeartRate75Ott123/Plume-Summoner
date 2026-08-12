@@ -9,10 +9,6 @@ import java.util.List;
 public final class SummonerConfig {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
-    public static final ForgeConfigSpec.IntValue MAX_SUMMONS_PER_PLAYER = BUILDER
-            .comment("A single player can only have this many mobs summoned at once.")
-            .defineInRange("maxSummonsPerPlayer", 10, 1, 50);
-
     /**
      * 解锁一种生物所需的击杀次数，默认 1。
      * 服务端在击杀事件时读取判定（联机时以服务器配置为准）。

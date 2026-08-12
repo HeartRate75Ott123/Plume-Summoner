@@ -11,11 +11,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 import plume.summoner.PlumeSummoner;
-import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
 
 public final class SummonHandler {
@@ -38,19 +36,6 @@ public final class SummonHandler {
 
     public static void summon(ServerPlayer player, EntityType<?> type) {
         ServerLevel level = player.serverLevel();
-
-        long count = level.getEntitiesOfClass(Mob.class,
-                        AABB.ofSize(player.position(), 256.0D, 256.0D, 256.0D),
-                        mob -> mob.getPersistentData().hasUUID(OWNER_TAG)
-                                && player.getUUID().equals(mob.getPersistentData().getUUID(OWNER_TAG)))
-                .size();
-        if (count >= SummonerConfig.MAX_SUMMONS_PER_PLAYER.get()) {
-            player.displayClientMessage(
-                    Component.translatable("message.plume_summoner.limit_reached",
-                            SummonerConfig.MAX_SUMMONS_PER_PLAYER.get()),
-                    true);
-            return;
-        }
 
         Entity entity = type.create(level);
         if (entity == null) {
