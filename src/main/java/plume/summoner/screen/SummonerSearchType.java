@@ -2,7 +2,6 @@ package plume.summoner.screen;
 
 import com.blamejared.searchables.api.SearchableComponent;
 import com.blamejared.searchables.api.SearchableType;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import plume.summoner.client.favorites.SummonerFavorites;
@@ -40,16 +39,17 @@ public final class SummonerSearchType {
     }
 
     /**
-     * 生物所属模组的显示名：原版显示 "Minecraft"，其他模组优先取 "mod.<modid>" 翻译键，否则回退 modid。
+     * 生物所属模组的显示名：
+     * 原版显示 "Minecraft"；其他模组取 mods.toml 的 displayName
+     * （该值硬编码于模组自身 mods.toml，加载器不做本地化），缺失时回退 modid。
      */
     public static String modDisplayName(EntityType<?> type) {
         String namespace = BuiltInRegistries.ENTITY_TYPE.getKey(type).getNamespace();
         if (namespace.equals("minecraft")) {
             return "Minecraft";
         }
-        String key = "mod." + namespace;
-        String translated = I18n.get(key);
-        // I18n.get 对缺失的翻译键会原样返回 key，据此判断是否有模组显示名翻译
-        return translated.equals(key) ? namespace : translated;
+        return net.minecraftforge.fml.ModList.get().getModContainerById(namespace)
+                .map(container -> container.getModInfo().getDisplayName())
+                .orElse(namespace);
     }
 }
