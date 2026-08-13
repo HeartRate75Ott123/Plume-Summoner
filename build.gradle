@@ -75,16 +75,10 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    implementation("com.github.towdium:PinIn:1.6.0") {
-        transitive = false
-    }
-    minecraftLibrary("com.github.towdium:PinIn:1.6.0") {
-        transitive = false
-    }
-    jarJar("com.github.towdium:PinIn:1.6.0") {
-        transitive = false
-        jarJar.ranged(it, "[1.6.0,)")
-    }
+    // Mixin 注解处理器：生成 refmap（MCP 名 -> SRG 名映射）。
+    // 发布 jar 在正式环境（SRG 混淆名）运行时，mixin 注入目标必须靠 refmap 映射，
+    // 缺失会导致启动即崩（dev 环境用 MCP 名直接命中，不会暴露此问题）。
+    annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
 
     // Searchables：组件语法（name:/categories:/favorites:）与自动补全弹窗引擎
     // fg.deobf 供开发环境编译/运行（minecraftLibrary 不会做 deobf 转换，不可用它带 Searchables）；
