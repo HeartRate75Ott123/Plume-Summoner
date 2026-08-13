@@ -14,6 +14,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plume.summoner.PlumeSummoner;
+import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
 import plume.summoner.network.SummonRequestPayload;
 
@@ -32,17 +33,36 @@ public final class SummonHandler {
             if (type == null || !((PlayerSummonDataProvider) player).isSummonUnlocked(type)) {
                 return;
             }
-            summon(player, type);
+            int count = Math.max(1, Math.min(payload.count(), SummonerConfig.MAX_SUMMON_COUNT.get()));
+            int summoned = 0;
+            for (int i = 0; i < count; i++) {
+                if (summon(player, type)) {
+                    summoned++;
+                }
+            }
+            if (summoned > 0) {
+                // 多次召唤不刷屏：只发一条汇总消息
+                player.displayClientMessage(
+                        summoned > 1
+                                ? Component.translatable("message.plume_summoner.summoned_count",
+                                summoned, type.getDescription())
+                                : Component.translatable("message.plume_summoner.summoned",
+                                type.getDescription()),
+                        false);
+            }
         });
     }
 
-    public static void summon(ServerPlayer player, EntityType<?> type) {
+    /**
+     * 尝试召唤一只实体，成功返回 true。
+     */
+    public static boolean summon(ServerPlayer player, EntityType<?> type) {
         ServerLevel level = player.serverLevel();
 
         Entity entity = type.create(level);
         if (entity == null) {
             PlumeSummoner.LOGGER.warn("Failed to create entity of type {}", type);
-            return;
+            return false;
         }
 
         BlockPos blockPos = BlockPos.containing(player.getEyePosition().add(player.getLookAngle().scale(3.0D)));
@@ -67,10 +87,8 @@ public final class SummonHandler {
 
         if (!level.addFreshEntity(entity)) {
             PlumeSummoner.LOGGER.warn("Failed to summon {} for {}", type, player.getName().getString());
-            return;
+            return false;
         }
-        player.displayClientMessage(
-                Component.translatable("message.plume_summoner.summoned", entity.getDisplayName()),
-                false);
+        return true;
     }
 }

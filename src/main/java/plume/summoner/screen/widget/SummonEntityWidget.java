@@ -20,6 +20,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import plume.summoner.PlumeSummoner;
 import plume.summoner.client.PlumeSummonerClient;
+import plume.summoner.client.SummonerUiPrefs;
 import plume.summoner.client.favorites.SummonerFavorites;
 import plume.summoner.network.SummonRequestPayload;
 
@@ -167,9 +168,12 @@ public class SummonEntityWidget extends AbstractButton {
                 return true;
             }
             if (unlocked()) {
+                int count = SummonerUiPrefs.summonCount();
                 PacketDistributor.sendToServer(
-                        new SummonRequestPayload(BuiltInRegistries.ENTITY_TYPE.getKey(type)));
-                parent.onClose();
+                        new SummonRequestPayload(BuiltInRegistries.ENTITY_TYPE.getKey(type), count));
+                if (SummonerUiPrefs.closeAfterSummon()) {
+                    parent.onClose();
+                }
                 return true;
             }
         }

@@ -5,10 +5,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import org.lwjgl.opengl.GL11;
+import plume.summoner.client.SummonerUiPrefs;
 import plume.summoner.screen.widget.SearchWidget;
 import plume.summoner.screen.widget.SummonEntityWidget;
 
@@ -29,6 +31,8 @@ public class SummonMenuScreen extends Screen {
 
     private final SearchWidget searchBar = createSearchBar();
     private final Button closeButton = createCloseButton();
+    private final Button closeBehaviorButton = createCloseBehaviorButton();
+    private final EditBox countField = createCountField();
     private final List<SummonEntityWidget> widgets = new ArrayList<>();
     // 关闭 GUI 时保存上次搜索内容，下次打开时恢复（静态字段跨 Screen 实例存活）
     private static String lastSearch = "";
@@ -49,6 +53,8 @@ public class SummonMenuScreen extends Screen {
         this.scrollOffset = 0;
         this.addRenderableWidget(this.searchBar);
         this.addRenderableWidget(this.closeButton);
+        this.addRenderableWidget(this.closeBehaviorButton);
+        this.addRenderableWidget(this.countField);
         this.searchBar.addResponder(text -> {
             this.lastSearch = text;
             if (this.loaded) {
@@ -185,6 +191,9 @@ public class SummonMenuScreen extends Screen {
 
         this.searchBar.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.closeBehaviorButton.render(guiGraphics, mouseX, mouseY, partialTick);
+        drawCountLabel(guiGraphics);
+        this.countField.render(guiGraphics, mouseX, mouseY, partialTick);
 
         double scaledFactor = this.minecraft.getWindow().getGuiScale();
         guiGraphics.pose().pushPose();
@@ -254,6 +263,29 @@ public class SummonMenuScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // 点击非数量输入框区域时让其失焦并提交（空/非法值重置为默认）
+        if (this.countField.isFocused() && !this.countField.isMouseOver(mouseX, mouseY)) {
+            this.countField.setFocused(false);
+            this.commitCount();
+        }
+        // 数量输入框右键：清空内容（随后失焦时按空值重置为默认 1）
+        if (button == 1 && this.countField.isMouseOver(mouseX, mouseY)) {
+            this.countField.setValue("");
+            this.searchBar.setFocused(false);
+            this.setFocused(this.countField);
+            return true;
+        }
+        // 左上角控件优先处理：切换按钮 + 数量输入框
+        if (this.closeBehaviorButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        if (this.countField.mouseClicked(mouseX, mouseY, button)) {
+            // 手动实现聚焦分发：EditBox 的 mouseClicked 只算光标位置，不设置焦点，
+            // 不 setFocused 则键盘输入进不去；同时与搜索框互斥失焦。
+            this.searchBar.setFocused(false);
+            this.setFocused(this.countField);
+            return true;
+        }
         // 搜索框 + 其补全弹窗（弹窗仅在搜索框聚焦时渲染/可交互）都转发给搜索框。
         // 注意：autoComplete().isMouseOver 不看聚焦状态，必须叠加 isFocused 判断，
         // 否则未聚焦时弹窗区域（与网格第一行重叠）会吞掉实体格子的点击。
@@ -321,17 +353,80 @@ public class SummonMenuScreen extends Screen {
     }
 
     private SearchWidget createSearchBar() {
-        return new SearchWidget(
-                (int) (getWindow().getGuiScaledWidth() / 2f - (getWindow().getGuiScaledWidth() / 4f / 2) - 5),
-                5,
-                (int) (getWindow().getGuiScaledWidth() / 4f),
-                20);
+        int width = searchBarWidth();
+        return new SearchWidget(searchBarX(), 5, width, 20);
+    }
+
+    private int searchBarWidth() {
+        return (int) (getWindow().getGuiScaledWidth() / 4f);
+    }
+
+    /**
+     * 左移避开左上角控件（切换按钮 + 数量输入框占约 175px），保持其余空间居中。
+     */
+    private int searchBarX() {
+        int leftSpace = 178;
+        int x = (int) (getWindow().getGuiScaledWidth() / 2f - searchBarWidth() / 2f);
+        return Math.max(x, leftSpace);
     }
 
     private Button createCloseButton() {
+        // 紧贴搜索框右侧
         return Button.builder(Component.literal("\u00d7"), button -> this.onClose())
-                .bounds((int) (getWindow().getGuiScaledWidth() / 2f + (getWindow().getGuiScaledWidth() / 8f) + 35), 5, 20, 20)
+                .bounds(searchBarX() + searchBarWidth() + 6, 5, 20, 20)
                 .build();
+    }
+
+    private Button createCloseBehaviorButton() {
+        Button button = Button.builder(closeBehaviorLabel(), btn -> {
+                    SummonerUiPrefs.setCloseAfterSummon(!SummonerUiPrefs.closeAfterSummon());
+                    btn.setMessage(closeBehaviorLabel());
+                })
+                .bounds(5, 5, 62, 20)
+                .build();
+        return button;
+    }
+
+    private Component closeBehaviorLabel() {
+        return Component.translatable(SummonerUiPrefs.closeAfterSummon()
+                ? "gui.plume_summoner.close_after"
+                : "gui.plume_summoner.keep_open");
+    }
+
+    private EditBox createCountField() {
+        EditBox field = new EditBox(Minecraft.getInstance().font, 132, 5, 40, 20,
+                Component.translatable("gui.plume_summoner.summon_count"));
+        field.setMaxLength(3);
+        field.setFilter(s -> s.chars().allMatch(Character::isDigit));
+        field.setValue(String.valueOf(SummonerUiPrefs.summonCount()));
+        return field;
+    }
+
+    /**
+     * 数量输入框失焦时校验：清空/非法/非整数 → 重置为默认 1；合法非 1 → 存档保持。
+     */
+    private void commitCount() {
+        String text = this.countField.getValue();
+        int value;
+        try {
+            value = Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            value = 0;
+        }
+        if (value <= 0) {
+            this.countField.setValue("1");
+            SummonerUiPrefs.setSummonCount(1);
+        } else {
+            // 规范化显示：去掉前导零（如 01 -> 1）
+            this.countField.setValue(String.valueOf(value));
+            SummonerUiPrefs.setSummonCount(value);
+        }
+    }
+
+    private void drawCountLabel(GuiGraphics guiGraphics) {
+        guiGraphics.drawString(this.font,
+                Component.translatable("gui.plume_summoner.summon_count"),
+                75, 9, 0xFFFFFF);
     }
 
     private Window getWindow() {
