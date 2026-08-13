@@ -1,9 +1,9 @@
 package plume.summoner.screen;
 
-import me.towdium.pinin.DictLoader;
-import me.towdium.pinin.PinIn;
-import me.towdium.pinin.searchers.Searcher;
-import me.towdium.pinin.searchers.TreeSearcher;
+import plume.summoner.pinin.DictLoader;
+import plume.summoner.pinin.PinIn;
+import plume.summoner.pinin.searchers.Searcher;
+import plume.summoner.pinin.searchers.TreeSearcher;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
@@ -56,7 +56,7 @@ public final class SummonerSearchContext {
      */
     public static void applyConfig() {
         context().config()
-                .keyboard(me.towdium.pinin.Keyboard.QUANPIN)
+                .keyboard(plume.summoner.pinin.Keyboard.QUANPIN)
                 .fZh2Z(true)
                 .fSh2S(true)
                 .fCh2C(true)

@@ -121,13 +121,10 @@ configurations {
 }
 
 dependencies {
-    // PinIn: JEC（JustEnoughCharacters）使用的拼音搜索库
-    // implementation -> 开发环境编译与运行；jarJar -> 打进发布 jar 的 META-INF/jarjar
-    implementation "com.github.towdium:PinIn:1.6.0"
-    jarJar "com.github.towdium:PinIn:1.6.0"
-    // 与 JEC 相同：开发运行时也显式带上 PinIn（双保险）
-    clientAdditionalRuntimeClasspath "com.github.towdium:PinIn:1.6.0"
-
+    // PinIn 拼音库源码已并入本项目（plume.summoner.pinin 包，MIT 许可）。
+    // 不再以 jarJar 内置 com.github.towdium:PinIn：JEC（JustEnoughCharacters）会把
+    // me.towdium.pinin 整包 shade 进自己的 jar，两者都以独立 JPMS 模块导出同一包，
+    // 会触发 java.lang.module.ResolutionException 启动崩溃。改名内置即可隔离。
     // Searchables: Controlling 的前置搜索/补全引擎（支持 "组件:值" 语法与自动补全弹窗）
     // jarJar 内置，玩家无需单独安装（若玩家装了 Controlling 会去重，NeoForge 选择最高版本）
     implementation "com.blamejared.searchables:Searchables-neoforge-1.21.1:1.0.1"
