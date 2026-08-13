@@ -72,14 +72,13 @@ public final class SummonEntitiesData {
     private static void loadAll() {
         TYPES.clear();
         RENDER_ENTITIES.clear();
-        java.util.Set<String> blacklist = new java.util.HashSet<>(SummonerConfig.BLACKLIST.get());
         Minecraft minecraft = Minecraft.getInstance();
         int created = 0;
         for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
             if (type == EntityType.PLAYER) {
                 continue;
             }
-            if (blacklist.contains(BuiltInRegistries.ENTITY_TYPE.getKey(type).toString())) {
+            if (!SummonerConfig.isAllowed(type)) {
                 continue;
             }
             try {

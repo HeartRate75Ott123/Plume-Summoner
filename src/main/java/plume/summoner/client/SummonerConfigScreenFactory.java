@@ -19,23 +19,31 @@ public final class SummonerConfigScreenFactory {
     private static final Component TITLE = Component.translatable("gui.plume_summoner.config.title");
     private static final Component GENERAL = Component.translatable("gui.plume_summoner.config.category.general");
     private static final Component KILLS_TO_UNLOCK = Component.translatable("plume_summoner.configuration.killsToUnlock");
+    private static final Component MAX_SUMMON_COUNT = Component.translatable("plume_summoner.configuration.maxSummonCount");
     private static final Component BLACKLIST = Component.translatable("plume_summoner.configuration.blacklist");
+    private static final Component WHITELIST = Component.translatable("plume_summoner.configuration.whitelist");
 
     private SummonerConfigScreenFactory() {
     }
 
     public static Screen create(Screen parent) {
         int[] kills = {SummonerConfig.KILLS_TO_UNLOCK.get()};
+        int[] maxCount = {SummonerConfig.MAX_SUMMON_COUNT.get()};
         List<String> blacklist = new ArrayList<>(SummonerConfig.BLACKLIST.get());
+        List<String> whitelist = new ArrayList<>(SummonerConfig.WHITELIST.get());
 
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
                 .setTitle(TITLE)
                 .setSavingRunnable(() -> {
                     SummonerConfig.KILLS_TO_UNLOCK.set(kills[0]);
+                    SummonerConfig.MAX_SUMMON_COUNT.set(maxCount[0]);
                     // set() 会用 isValidEntry 校验每个条目，格式非法的条目（如无冒号）会抛异常
                     // 导致整份配置写不进去，这里先按加载时的规则过滤掉（与"无效条目被忽略"语义一致）
                     SummonerConfig.BLACKLIST.set(blacklist.stream()
+                            .filter(SummonerConfig::isValidEntry)
+                            .toList());
+                    SummonerConfig.WHITELIST.set(whitelist.stream()
                             .filter(SummonerConfig::isValidEntry)
                             .toList());
                     SummonerConfig.SPEC.save();
@@ -51,6 +59,13 @@ public final class SummonerConfigScreenFactory {
                 .setSaveConsumer(value -> kills[0] = value)
                 .build());
 
+        general.addEntry(entry.startIntField(MAX_SUMMON_COUNT, SummonerConfig.MAX_SUMMON_COUNT.get())
+                .setDefaultValue(50)
+                .setMin(1)
+                .setMax(1000)
+                .setSaveConsumer(value -> maxCount[0] = value)
+                .build());
+
         general.addEntry(new BorderedStringListEntry(
                 BLACKLIST,
                 blacklist,
@@ -59,6 +74,18 @@ public final class SummonerConfigScreenFactory {
                 value -> {
                     blacklist.clear();
                     blacklist.addAll(value);
+                },
+                List::of,
+                Component.translatable("text.cloth-config.reset_value")));
+
+        general.addEntry(new BorderedStringListEntry(
+                WHITELIST,
+                whitelist,
+                false,
+                Optional::empty,
+                value -> {
+                    whitelist.clear();
+                    whitelist.addAll(value);
                 },
                 List::of,
                 Component.translatable("text.cloth-config.reset_value")));

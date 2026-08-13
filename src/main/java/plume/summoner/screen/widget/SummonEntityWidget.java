@@ -19,6 +19,7 @@ import net.minecraftforge.network.PacketDistributor;
 import org.joml.Quaternionf;
 import plume.summoner.PlumeSummoner;
 import plume.summoner.client.PlumeSummonerClient;
+import plume.summoner.client.SummonerUiPrefs;
 import plume.summoner.client.favorites.SummonerFavorites;
 import plume.summoner.network.NetworkHandler;
 import plume.summoner.network.SummonRequestMessage;
@@ -167,9 +168,12 @@ public class SummonEntityWidget extends AbstractButton {
                 return true;
             }
             if (unlocked()) {
+                int count = SummonerUiPrefs.summonCount();
                 NetworkHandler.CHANNEL.sendToServer(
-                        new SummonRequestMessage(BuiltInRegistries.ENTITY_TYPE.getKey(type)));
-                parent.onClose();
+                        new SummonRequestMessage(BuiltInRegistries.ENTITY_TYPE.getKey(type), count));
+                if (SummonerUiPrefs.closeAfterSummon()) {
+                    parent.onClose();
+                }
                 return true;
             }
         }

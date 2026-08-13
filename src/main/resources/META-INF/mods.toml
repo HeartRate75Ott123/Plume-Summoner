@@ -30,7 +30,7 @@ displayName="${mod_name}" #mandatory
 # A URL for the "homepage" for this mod, displayed in the mod UI
 #displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
 # A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="examplemod.png" #optional
+logoFile="summonericon.png" #optional
 # A text field displayed in the mod UI
 #credits="" #optional
 # A text field displayed in the mod UI
@@ -44,7 +44,33 @@ authors="${mod_authors}" #optional
 #displayTest="MATCH_VERSION" # if nothing is specified, MATCH_VERSION is the default when clientSideOnly=false, otherwise IGNORE_ALL_VERSION when clientSideOnly=true (#optional)
 
 # The description text for the mod (multi line!) (#mandatory)
-description='''Kill mobs to unlock them, then summon them with the press of a key!'''
+description='''
+[English]
+A simple yet powerful mob summoning mod for Minecraft 1.20.1 (Forge).
+Kill mobs to unlock them, then summon them with the press of a key!
+
+Features:
+- Kill any mob (excluding those in the blacklist/whitelist) to unlock its summon; unlock progress is tracked per player and synced to clients.
+- One-key summon menu (configurable keybinding, default G) with live search and Pinyin/Chinese support, favorites, categories, and a 3D mob preview.
+- Configurable summon behavior: close the menu after summoning or keep it open, and set the number of mobs summoned in a single request.
+- Per-world persistent UI preferences (summon count, close-after-summon toggle) for both singleplayer and multiplayer.
+- Customizable blacklist/whitelist (supporting the "all" keyword) to control which mobs appear in the menu and count toward unlocking.
+- Configurable values: kills required to unlock, max summon count per request (default 50, server-side clamped).
+- No clientside-only features; works correctly on dedicated servers.
+
+[简体中文]
+一款简单而强大的生物召唤模组（Minecraft 1.20.1 / Forge）。
+击杀生物即可解锁召唤，按下快捷键即可召唤它们！
+
+功能特性：
+- 击杀任意生物（黑/白名单排除的除外）即可解锁其召唤，解锁进度按玩家独立记录并同步至客户端。
+- 一键召唤菜单（可自定义快捷键，默认 G），支持实时搜索、拼音/中文搜索、收藏、分类以及 3D 生物预览。
+- 可配置召唤行为：召唤后关闭界面或保持界面打开，并可设置单次召唤的生物数量。
+- 存档级界面偏好持久化（单次召唤数量、召唤后是否关闭界面），单人与联机均生效。
+- 可自定义黑名单/白名单（支持 all 关键字），控制菜单中显示哪些生物、哪些生物计入解锁。
+- 可配置项：解锁所需击杀数、单次召唤数量上限（默认 50，服务端强制截断）。
+- 无仅客户端功能，可在专用服务器上正常工作。
+'''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.${mod_id}]] #optional
     # the modid of the dependency

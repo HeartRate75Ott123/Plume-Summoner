@@ -77,8 +77,9 @@ public final class PlumeSummonerClient {
 
         @SubscribeEvent
         public static void onJoinWorld(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingIn event) {
-            // 进入世界（单机/联机）时按当前存档加载收藏、清空上次搜索内容
+            // 进入世界（单机/联机）时按当前存档加载收藏/界面偏好、清空上次搜索内容
             SummonerFavorites.loadForCurrentWorld();
+            SummonerUiPrefs.loadForCurrentWorld();
             SummonMenuScreen.resetLastSearch();
         }
     }

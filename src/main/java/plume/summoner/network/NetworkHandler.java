@@ -7,7 +7,8 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import plume.summoner.PlumeSummoner;
 
 public final class NetworkHandler {
-    public static final String PROTOCOL_VERSION = "1";
+    // SummonRequestMessage 增加 count 字段后协议不兼容，bump 到 2
+    public static final String PROTOCOL_VERSION = "2";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(PlumeSummoner.MOD_ID, "main"),
