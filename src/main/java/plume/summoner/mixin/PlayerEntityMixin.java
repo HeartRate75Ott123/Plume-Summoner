@@ -74,6 +74,17 @@ public abstract class PlayerEntityMixin implements PlayerSummonDataProvider {
         return BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
     }
 
+    @Override
+    public Map<String, Integer> getKillCounts() {
+        return this.plumeSummoner$killCounts;
+    }
+
+    @Override
+    public void setKillCounts(Map<String, Integer> counts) {
+        this.plumeSummoner$killCounts.clear();
+        this.plumeSummoner$killCounts.putAll(counts);
+    }
+
     @Inject(method = "addAdditionalSaveData", at = @At("HEAD"))
     private void plumeSummoner$saveUnlocked(CompoundTag tag, CallbackInfo ci) {
         ListTag list = new ListTag();

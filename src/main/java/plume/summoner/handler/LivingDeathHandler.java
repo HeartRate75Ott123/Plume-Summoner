@@ -53,6 +53,20 @@ public class LivingDeathHandler {
         }
     }
 
+    @SubscribeEvent
+    public void onPlayerClone(PlayerEvent.Clone event) {
+        // 玩家死亡重生时创建全新 ServerPlayer 实例，不经过 readAdditionalSaveData，
+        // mixin 字段会丢空；在 Clone 事件（restoreFrom 末尾触发）把击杀计数拷贝过来。
+        if (!(event.getEntity() instanceof ServerPlayer newPlayer)) {
+            return;
+        }
+        PlayerSummonDataProvider oldData = (PlayerSummonDataProvider) event.getOriginal();
+        PlayerSummonDataProvider newData = (PlayerSummonDataProvider) newPlayer;
+        newData.setKillCounts(oldData.getKillCounts());
+        // 重生后客户端仍是死前快照，重发同步让界面刷新为真实状态
+        sendUnlockSync(newPlayer);
+    }
+
     public static void sendUnlockSync(ServerPlayer player) {
         PlayerSummonDataProvider data = (PlayerSummonDataProvider) player;
         List<net.minecraft.resources.ResourceLocation> ids = data.getSummonUnlockedTypes().stream()

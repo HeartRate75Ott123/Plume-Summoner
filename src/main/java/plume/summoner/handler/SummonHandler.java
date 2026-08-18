@@ -10,7 +10,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plume.summoner.PlumeSummoner;
@@ -66,7 +65,6 @@ public final class SummonHandler {
         }
 
         BlockPos blockPos = BlockPos.containing(player.getEyePosition().add(player.getLookAngle().scale(3.0D)));
-        blockPos = blockPos.atY(level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockPos.getX(), blockPos.getZ()));
         Vec3 pos = Vec3.atBottomCenterOf(blockPos);
         // 正确面向玩家：实体朝向 = 从实体位置指向玩家的方位角（MC yaw：0 朝南、90 朝西）
         float yaw = (float) Math.toDegrees(Math.atan2(-(player.getX() - pos.x), player.getZ() - pos.z));
