@@ -10,7 +10,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 import plume.summoner.PlumeSummoner;
@@ -64,7 +63,6 @@ public final class SummonHandler {
         }
 
         BlockPos blockPos = BlockPos.containing(player.getEyePosition().add(player.getLookAngle().scale(3.0D)));
-        blockPos = blockPos.atY(level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockPos.getX(), blockPos.getZ()));
         Vec3 pos = Vec3.atBottomCenterOf(blockPos);
         entity.moveTo(pos.x, pos.y, pos.z, player.getYRot() + 180.0F, 0.0F);
 
