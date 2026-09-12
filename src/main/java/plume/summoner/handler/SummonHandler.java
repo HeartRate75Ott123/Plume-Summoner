@@ -15,6 +15,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import plume.summoner.PlumeSummoner;
 import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
+import plume.summoner.data.SummonLimits;
 import plume.summoner.network.SummonRequestPayload;
 
 public final class SummonHandler {
@@ -33,6 +34,14 @@ public final class SummonHandler {
                 return;
             }
             int count = Math.max(1, Math.min(payload.count(), SummonerConfig.MAX_SUMMON_COUNT.get()));
+            // 名单生物单次召唤数量限制：玩家开关开启且该生物在名单内时，再按名单上限截断
+            PlayerSummonDataProvider data = (PlayerSummonDataProvider) player;
+            int listedLimit = SummonLimits.limitOf(type);
+            if (listedLimit > 0 && data.isSummonLimitEnabled() && count > listedLimit) {
+                count = listedLimit;
+                player.displayClientMessage(
+                        Component.translatable("message.plume_summoner.summon_limit_clamped", count), true);
+            }
             int summoned = 0;
             for (int i = 0; i < count; i++) {
                 if (summon(player, type)) {

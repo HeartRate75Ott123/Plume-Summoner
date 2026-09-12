@@ -7,6 +7,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 import plume.summoner.config.SummonerConfig;
+import plume.summoner.data.SummonLimits;
 import plume.summoner.handler.LivingDeathHandler;
 import plume.summoner.network.NetworkHandler;
 
@@ -18,6 +19,8 @@ public class PlumeSummoner {
     public PlumeSummoner(IEventBus modEventBus, ModContainer modContainer) {
         SummonerConfig.register(modContainer);
         NetworkHandler.register(modEventBus);
+        // 名单生物单次召唤数量限制：服务端数据包 reload listener
+        SummonLimits.register();
         NeoForge.EVENT_BUS.register(new LivingDeathHandler());
     }
 }

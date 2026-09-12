@@ -9,8 +9,10 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.opengl.GL11;
 import plume.summoner.client.SummonerUiPrefs;
+import plume.summoner.network.SummonLimitTogglePayload;
 import plume.summoner.screen.widget.SearchWidget;
 import plume.summoner.screen.widget.SummonEntityWidget;
 
@@ -28,10 +30,13 @@ public class SummonMenuScreen extends Screen {
     private static final int SCROLLBAR_WIDTH = 6;
     private static final int SCROLLBAR_X_OFFSET = 4;
     private static final int SCROLLBAR_MIN_THUMB = 20;
+    private static final int TOGGLE_BUTTON_WIDTH = 80;
+    private static final int TOGGLE_BUTTON_GAP = 8;
 
     private final SearchWidget searchBar = createSearchBar();
     private final Button closeButton = createCloseButton();
     private final Button closeBehaviorButton = createCloseBehaviorButton();
+    private final Button summonLimitButton = createSummonLimitButton();
     private final EditBox countField = createCountField();
     private final List<SummonEntityWidget> widgets = new ArrayList<>();
     // 关闭 GUI 时保存上次搜索内容，下次打开时恢复（静态字段跨 Screen 实例存活）
@@ -51,9 +56,13 @@ public class SummonMenuScreen extends Screen {
     protected void init() {
         this.widgets.clear();
         this.scrollOffset = 0;
+        // 右上角开关的位置依赖 this.width（构造期还是 0），必须等 init() 拿到真实宽度后再定位，
+        // 否则按钮会被放到屏幕左侧外面（x 变成负数）。
+        this.summonLimitButton.setPosition(summonLimitButtonX(), 5);
         this.addRenderableWidget(this.searchBar);
         this.addRenderableWidget(this.closeButton);
         this.addRenderableWidget(this.closeBehaviorButton);
+        this.addRenderableWidget(this.summonLimitButton);
         this.addRenderableWidget(this.countField);
         this.searchBar.addResponder(text -> {
             this.lastSearch = text;
@@ -192,14 +201,13 @@ public class SummonMenuScreen extends Screen {
         this.searchBar.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeBehaviorButton.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.summonLimitButton.render(guiGraphics, mouseX, mouseY, partialTick);
         drawCountLabel(guiGraphics);
         this.countField.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        double scaledFactor = this.minecraft.getWindow().getGuiScale();
+        // 与格子内实体渲染用同一套 scissor 栈（GuiGraphics），离开时 pop 才能正确恢复
         guiGraphics.pose().pushPose();
-        RenderSystem.enableScissor(0, 0,
-                (int) ((double) this.width * scaledFactor),
-                (int) ((double) (this.height - TOP) * scaledFactor));
+        guiGraphics.enableScissor(0, TOP, this.width, this.height);
 
         for (SummonEntityWidget widget : this.widgets) {
             if (widget.getY() + widget.getHeight() > TOP && widget.getY() < this.height) {
@@ -207,7 +215,7 @@ public class SummonMenuScreen extends Screen {
             }
         }
 
-        RenderSystem.disableScissor();
+        guiGraphics.disableScissor();
         guiGraphics.pose().popPose();
 
         // 实体模型渲染（InventoryScreen.renderEntityInInventory 内部平移到 z=50 并写入深度缓冲）
@@ -232,6 +240,11 @@ public class SummonMenuScreen extends Screen {
         // 补全弹窗不是 addRenderableWidget 注册的，需手动渲染（Controlling 同款做法）
         this.searchBar.autoComplete().render(guiGraphics, mouseX, mouseY, partialTick);
 
+        // 右上角开关贴着屏幕右缘，用默认位置会被推出屏幕，这里手动左移
+        if (this.summonLimitButton.isHovered() && !isHoveringAnyWidget(mouseX, mouseY)) {
+            renderSummonLimitTooltip(guiGraphics, mouseX, mouseY);
+        }
+
         RenderSystem.enableDepthTest();
     }
 
@@ -245,6 +258,19 @@ public class SummonMenuScreen extends Screen {
         float thumbY = scrollbarThumbY();
         float thumbH = scrollbarThumbHeight();
         guiGraphics.fill(x, (int) thumbY, x + SCROLLBAR_WIDTH, (int) (thumbY + thumbH), 0xFFFFFFFF);
+    }
+
+    /**
+     * 鼠标是否落在某个可见实体格子上（用于避免右上角开关的提示与格子提示重叠）。
+     */
+    private boolean isHoveringAnyWidget(int mouseX, int mouseY) {
+        for (SummonEntityWidget widget : this.widgets) {
+            if (widget.getY() + widget.getHeight() > TOP && widget.getY() < this.height
+                    && widget.isMouseOver(mouseX, mouseY)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -276,6 +302,10 @@ public class SummonMenuScreen extends Screen {
             return true;
         }
         // 左上角控件优先处理：切换按钮 + 数量输入框
+        // 右上角开关也属于顶部条，必须在这里提前分发，否则会被下面 mouseY < TOP 的搜索分支吞掉
+        if (this.summonLimitButton.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
         if (this.closeBehaviorButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -391,6 +421,50 @@ public class SummonMenuScreen extends Screen {
         return Component.translatable(SummonerUiPrefs.closeAfterSummon()
                 ? "gui.plume_summoner.close_after"
                 : "gui.plume_summoner.keep_open");
+    }
+
+    /**
+     * 右上角开关：名单生物单次召唤数量限制。
+     * 位置让开右侧滚动条（滚动条宽 6 + 偏移 4），与左上角的两个控件同一行。
+     */
+    private Button createSummonLimitButton() {
+        return Button.builder(summonLimitLabel(), btn -> {
+                    boolean enabled = !SummonerUiPrefs.summonLimitEnabled();
+                    // 乐观更新 + 发包；服务端写入后会回发同步包纠正显示
+                    SummonerUiPrefs.applySummonLimitSync(enabled, SummonerUiPrefs.summonLimitListedCount());
+                    PacketDistributor.sendToServer(new SummonLimitTogglePayload(enabled));
+                    btn.setMessage(summonLimitLabel());
+                })
+                .bounds(summonLimitButtonX(), 5, TOGGLE_BUTTON_WIDTH, 20)
+                .build();
+    }
+
+    private int summonLimitButtonX() {
+        return this.width - SCROLLBAR_X_OFFSET - SCROLLBAR_WIDTH - TOGGLE_BUTTON_GAP - TOGGLE_BUTTON_WIDTH;
+    }
+
+    private Component summonLimitLabel() {
+        return Component.translatable(SummonerUiPrefs.summonLimitEnabled()
+                        ? "gui.plume_summoner.limit_on"
+                        : "gui.plume_summoner.limit_off")
+                .withColor(SummonerUiPrefs.summonLimitEnabled() ? 0x55FF55 : 0xAAAAAA);
+    }
+
+    /**
+     * 右上角开关的提示：说明功能 + 当前名单条目数（由服务端同步下发）。
+     */
+    private Component summonLimitTooltip() {
+        return Component.translatable("gui.plume_summoner.limit_tooltip", SummonerUiPrefs.summonLimitListedCount());
+    }
+
+    /**
+     * 按钮贴屏幕右缘，默认 tooltip 会被推出屏幕，这里手动左移并放到按钮下方。
+     */
+    private void renderSummonLimitTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        Component tooltip = summonLimitTooltip();
+        int tooltipWidth = this.font.width(tooltip);
+        int x = Math.max(4, Math.min(mouseX, this.width - tooltipWidth - 8));
+        guiGraphics.renderTooltip(this.font, tooltip, x, mouseY + 14);
     }
 
     private EditBox createCountField() {

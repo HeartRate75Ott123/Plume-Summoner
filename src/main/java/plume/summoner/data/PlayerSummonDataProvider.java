@@ -26,4 +26,12 @@ public interface PlayerSummonDataProvider {
      * 整体替换击杀计数（重生时从旧玩家实例拷贝）。
      */
     void setKillCounts(Map<String, Integer> counts);
+
+    /**
+     * 「名单生物单次召唤数量限制」开关是否启用，默认 true。
+     * 存在玩家 NBT（存档级），死亡重生由 Clone 事件显式拷贝。
+     */
+    boolean isSummonLimitEnabled();
+
+    void setSummonLimitEnabled(boolean enabled);
 }

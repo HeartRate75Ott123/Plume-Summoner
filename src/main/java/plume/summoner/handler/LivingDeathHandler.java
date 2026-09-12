@@ -11,6 +11,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
+import plume.summoner.data.SummonLimits;
+import plume.summoner.network.SummonLimitSyncPayload;
 import plume.summoner.network.UnlockSyncPayload;
 
 import java.util.List;
@@ -50,6 +52,7 @@ public class LivingDeathHandler {
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             sendUnlockSync(player);
+            sendSummonLimitSync(player);
         }
     }
 
@@ -63,8 +66,20 @@ public class LivingDeathHandler {
         PlayerSummonDataProvider oldData = (PlayerSummonDataProvider) event.getOriginal();
         PlayerSummonDataProvider newData = (PlayerSummonDataProvider) newPlayer;
         newData.setKillCounts(oldData.getKillCounts());
+        // 名单生物单次召唤数量限制开关同样要跨死亡保留（存档级状态，不随重生重置）
+        newData.setSummonLimitEnabled(oldData.isSummonLimitEnabled());
         // 重生后客户端仍是死前快照，重发同步让界面刷新为真实状态
         sendUnlockSync(newPlayer);
+        sendSummonLimitSync(newPlayer);
+    }
+
+    /**
+     * 下发「名单生物单次召唤数量限制」的真实状态（登录 / 重生 / 切换后调用）。
+     * 名单条目数一并下发，客户端界面不必自己解析数据包。
+     */
+    public static void sendSummonLimitSync(ServerPlayer player) {
+        boolean enabled = ((PlayerSummonDataProvider) player).isSummonLimitEnabled();
+        PacketDistributor.sendToPlayer(player, new SummonLimitSyncPayload(enabled, SummonLimits.listedCount()));
     }
 
     public static void sendUnlockSync(ServerPlayer player) {
