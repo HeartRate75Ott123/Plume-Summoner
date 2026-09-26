@@ -127,6 +127,27 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+// ---------- 发布产物格式 ----------
+// build/libs 下只保留一个可直接分发的 jar：plume_summoner-<版本>-1.20.1-forge.jar
+// 它是 jarJar 合并了内置依赖（Searchables / Cloth Config）后的版本，玩家无需另装前置。
+// 裸 jar（jar 的产物）只是 jarJar 的输入与中间产物，输出到 devlibs，不进 libs。
+// reobfJarJar 是 RenameJarInPlace（原地重混淆），直接沿用 jarJar 的文件名，
+// 因此这里只需给 jarJar 起对名字即可；该任务由插件在脚本求值后注册，故用 afterEvaluate。
+afterEvaluate {
+    def finalJarName = "${archivesBaseName}-${mod_version}-1.20.1-forge.jar"
+
+    tasks.named('jar', Jar).configure {
+        destinationDirectory = layout.buildDirectory.dir('devlibs')
+    }
+
+    tasks.named('jarJar').configure {
+        // 平台后缀（-1.20.1-forge）充当 classifier，便于按 MC/加载器区分产物
+        archiveClassifier = '1.20.1-forge'
+        // 直接产出最终名字，避免再出现 plume_summoner-<版本>-all.jar
+        archiveFileName = finalJarName
+    }
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
