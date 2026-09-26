@@ -15,6 +15,7 @@ import net.minecraftforge.network.NetworkEvent;
 import plume.summoner.PlumeSummoner;
 import plume.summoner.config.SummonerConfig;
 import plume.summoner.data.PlayerSummonDataProvider;
+import plume.summoner.data.SummonLimits;
 
 public final class SummonHandler {
     private static final String OWNER_TAG = "plume_summoner_owner";
@@ -32,6 +33,13 @@ public final class SummonHandler {
             return;
         }
         int clamped = Math.max(1, Math.min(count, SummonerConfig.MAX_SUMMON_COUNT.get()));
+        // 名单生物单次召唤数量限制：玩家开关开启且该生物在名单内时，再按名单上限截断
+        int listedLimit = SummonLimits.limitOf(type);
+        if (listedLimit > 0 && ((PlayerSummonDataProvider) player).isSummonLimitEnabled() && clamped > listedLimit) {
+            clamped = listedLimit;
+            player.displayClientMessage(
+                    Component.translatable("message.plume_summoner.summon_limit_clamped", clamped), true);
+        }
         int summoned = 0;
         for (int i = 0; i < clamped; i++) {
             if (summon(player, type)) {

@@ -26,11 +26,17 @@ public abstract class PlayerEntityMixin implements PlayerSummonDataProvider {
     private static final String LEGACY_NBT_KEY = "plume_summoner_unlocked_mobs";
     // 新版数据键：击杀计数（id -> count），count >= killsToUnlock 即解锁
     private static final String NBT_KEY = "plume_summoner_kill_counts";
+    // 名单生物单次召唤数量限制开关（存档级保存；死亡重生由 PlayerEvent.Clone 拷贝）
+    private static final String NBT_LIMIT_ENABLED = "plume_summoner_summon_limit_enabled";
 
     @Unique
     // LinkedHashMap 保持插入顺序（= 首次击杀该生物的顺序），
     // 保证 getSummonUnlockedTypes() 按解锁先后输出，客户端"新解锁排最前"排序依赖此顺序。
     private final Map<String, Integer> plumeSummoner$killCounts = new LinkedHashMap<>();
+
+    @Unique
+    // 名单生物单次召唤数量限制开关，默认开启
+    private boolean plumeSummoner$summonLimitEnabled = true;
 
     @Override
     public Set<EntityType<?>> getSummonUnlockedTypes() {
@@ -84,6 +90,16 @@ public abstract class PlayerEntityMixin implements PlayerSummonDataProvider {
         this.plumeSummoner$killCounts.putAll(counts);
     }
 
+    @Override
+    public boolean isSummonLimitEnabled() {
+        return this.plumeSummoner$summonLimitEnabled;
+    }
+
+    @Override
+    public void setSummonLimitEnabled(boolean enabled) {
+        this.plumeSummoner$summonLimitEnabled = enabled;
+    }
+
     @Inject(method = "addAdditionalSaveData", at = @At("HEAD"))
     private void plumeSummoner$saveUnlocked(CompoundTag tag, CallbackInfo ci) {
         ListTag list = new ListTag();
@@ -94,6 +110,7 @@ public abstract class PlayerEntityMixin implements PlayerSummonDataProvider {
             list.add(entryTag);
         }
         tag.put(NBT_KEY, list);
+        tag.putBoolean(NBT_LIMIT_ENABLED, this.plumeSummoner$summonLimitEnabled);
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
@@ -110,5 +127,8 @@ public abstract class PlayerEntityMixin implements PlayerSummonDataProvider {
             String id = legacy.getString(i);
             this.plumeSummoner$killCounts.merge(id, Integer.MAX_VALUE, Math::max);
         }
+        // 开关默认 true：只有存档里明确写了 false 才关闭
+        this.plumeSummoner$summonLimitEnabled =
+                !tag.contains(NBT_LIMIT_ENABLED) || tag.getBoolean(NBT_LIMIT_ENABLED);
     }
 }

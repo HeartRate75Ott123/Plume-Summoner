@@ -1,4 +1,4 @@
-﻿{
+{
   "key.categories.plume_summoner": "Plume Summoner",
   "key.plume_summoner.open": "Open Summoner Menu",
   "screen.plume_summoner.title": "Plume Summoner",
@@ -12,11 +12,15 @@
   "gui.plume_summoner.locked": "Locked",
   "gui.plume_summoner.favorite": "Favorite this mob",
   "gui.plume_summoner.unfavorite": "Unfavorite this mob",
+  "gui.plume_summoner.limit_on": "List Limit: ON",
+  "gui.plume_summoner.limit_off": "List Limit: OFF",
+  "gui.plume_summoner.limit_tooltip": "Per-summon limit for listed mobs: while enabled, listed mobs can only be summoned up to their own limit each time (%s entries loaded).",
   "tooltip.plume_summoner.locked": "Kill this mob to unlock its summon.",
   "message.plume_summoner.summoned": "%s has been summoned!",
   "message.plume_summoner.summoned_count": "Summoned %2$s x%1$d!",
   "message.plume_summoner.unlocked_mob": "Unlocked summon: %s",
   "message.plume_summoner.not_unlocked": "This mob is not unlocked yet.",
+  "message.plume_summoner.summon_limit_clamped": "This mob's summon limit per request is %s.",
   "plume_summoner.configuration.killsToUnlock": "Kills required to unlock",
   "plume_summoner.configuration.killsToUnlock.tooltip": "How many kills are required to unlock a mob for summoning.",
   "plume_summoner.configuration.maxSummonCount": "Max summon count per request",

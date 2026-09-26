@@ -23,6 +23,11 @@ public final class SummonerUiPrefs {
 
     private static boolean closeAfterSummon = true;
     private static int summonCount = 1;
+    // 「名单生物单次召唤数量限制」开关：服务端权威状态，客户端仅缓存用于界面显示。
+    // 不落盘（服务端登录/重生/切换时都会同步），避免本地文件与服务端不一致。
+    private static boolean summonLimitEnabled = true;
+    // 服务端当前已加载的名单条目数，随同步包下发，仅用于界面提示
+    private static int summonLimitListedCount;
 
     private SummonerUiPrefs() {
     }
@@ -33,6 +38,22 @@ public final class SummonerUiPrefs {
 
     public static int summonCount() {
         return summonCount;
+    }
+
+    public static boolean summonLimitEnabled() {
+        return summonLimitEnabled;
+    }
+
+    public static int summonLimitListedCount() {
+        return summonLimitListedCount;
+    }
+
+    /**
+     * 由服务端同步（{@code SummonLimitSyncMessage}）设置，不落盘。
+     */
+    public static void applySummonLimitSync(boolean enabled, int listedCount) {
+        summonLimitEnabled = enabled;
+        summonLimitListedCount = Math.max(0, listedCount);
     }
 
     public static void setCloseAfterSummon(boolean value) {
@@ -51,6 +72,9 @@ public final class SummonerUiPrefs {
     public static void loadForCurrentWorld() {
         closeAfterSummon = true;
         summonCount = 1;
+        // 服务端会在登录时立刻下发真实状态，这里先回到默认（开）
+        summonLimitEnabled = true;
+        summonLimitListedCount = 0;
         try {
             Path file = prefsFile();
             if (file == null) {

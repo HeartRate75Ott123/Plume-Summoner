@@ -36,6 +36,10 @@ public class SummonEntityWidget extends AbstractButton {
     private static final ResourceLocation EMPTY_STAR_ICON = new ResourceLocation(
             PlumeSummoner.MOD_ID, "textures/gui/emptystaricon.png");
     private static final int STAR_SIZE = 9;
+    /**
+     * 渲染框（= 本格子）四周再内缩一点，避免实体正好压在相邻格子的边框上；超出的部分由 scissor 裁掉。
+     */
+    private static final int CLIP_INSET = 1;
 
     private final Screen parent;
     private final EntityType<?> type;
@@ -135,8 +139,17 @@ public class SummonEntityWidget extends AbstractButton {
     /**
      * 参照 Remorphed EntityWidget.renderShape：InventoryScreen.renderEntityInInventory + 崩溃兜底。
      * 1.20.1 的签名是 6 参数（无 Vector3f 平移参数）。
+     * <p>
+     * 「先整体渲染，再裁剪到一个格子」：模型按 {@code size} 等比缩放后照常整体渲染，
+     * 再用 scissor 把绘制区域限制在本格子内，超出的部分裁掉
+     * （宽体 / 长身 / 巨型 BOSS 不会再压到相邻格子上）。
      */
     private void renderEntity(GuiGraphics guiGraphics) {
+        guiGraphics.enableScissor(
+                getX() + CLIP_INSET,
+                getY() + CLIP_INSET,
+                getX() + getWidth() - CLIP_INSET,
+                getY() + getHeight() - CLIP_INSET);
         try {
             InventoryScreen.renderEntityInInventory(guiGraphics,
                     getX() + getWidth() / 2,
@@ -154,6 +167,9 @@ public class SummonEntityWidget extends AbstractButton {
             dispatcher.setRenderShadow(true);
             RenderSystem.getModelViewStack().popPose();
             Lighting.setupFor3DItems();
+        } finally {
+            // 必须恢复裁剪：异常路径若残留 scissor，整个界面后续渲染都会被裁掉
+            guiGraphics.disableScissor();
         }
     }
 
